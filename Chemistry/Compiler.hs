@@ -3,7 +3,12 @@ module Chemistry.Compiler
     ) where
 
 import Chemistry.Parser
-    ( parseInput
+    ( parseInputAST
+    )
+
+import Chemistry.Analyzer
+    (
+        analyzeReaction
     )
 
 import Chemistry.Evaluator
@@ -15,12 +20,12 @@ import Chemistry.Render
     )
 
 compileReaction :: String -> Either String String
-compileReaction source =
-    case parseInput source of
-        Left errorMessage ->
-            Left errorMessage
+compileReaction source = do
+    syntaxTree <- parseInputAST source
 
-        Right reactionInput ->
-            Right
-                (renderResult
-                    (evaluate reactionInput))
+    semanticInput <- analyzeReaction syntaxTree
+
+    let result = evaluate semanticInput
+
+    Right (renderResult result)
+    

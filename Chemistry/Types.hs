@@ -4,6 +4,7 @@ module Chemistry.Types
     , Salt(..)
     , ReactionInput(..)
     , ReactionResult(..)
+    ,metalOfSalt
     ) where
 
 data Metal
@@ -37,3 +38,11 @@ data ReactionResult
     |ReactionOccurs_Metal_Salt Metal Salt Metal Salt
     |NoReaction_Metal_Salt Metal Salt
     deriving (Eq, Show)
+
+metalOfSalt :: Salt -> Metal
+metalOfSalt ZnCl2 = Zn
+metalOfSalt ZnSO4 = Zn
+metalOfSalt FeCl2 = Fe
+metalOfSalt FeSO4 = Fe
+metalOfSalt CuCl2 = Cu
+metalOfSalt CuSO4 = Cu

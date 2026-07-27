@@ -1,87 +1,205 @@
 module Chemistry.Parser
-    ( parseInput,
-    get_Metal_From_Salt
+    ( parseInputAST
+    , parseFormula
+    , parseSpecies
     ) where
 
-
-import Data.Char (isSpace)
-
-import Chemistry.Types
-    ( Metal(..)
-    , Acid(..)
-    , ReactionInput(..), Salt (ZnCl2, ZnSO4, FeCl2, FeSO4, CuCl2, CuSO4)
+import Data.Char
+    ( isDigit
+    , isLower
+    , isSpace
+    , isUpper
     )
 
+import Chemistry.AST
+    
 
-parseMetal :: String -> Maybe Metal
-parseMetal "Zn" = Just Zn
-parseMetal "Fe" = Just Fe
-parseMetal "Cu" = Just Cu
-parseMetal _    = Nothing
-
-
-parseAcid :: String -> Maybe Acid
-parseAcid "HCl"   = Just HCl
-parseAcid "H2SO4" = Just H2SO4
-parseAcid _       = Nothing
-
-parseSalt :: String -> Maybe Salt
-parseSalt "ZnCl2" = Just ZnCl2
-parseSalt "ZnSO4" = Just ZnSO4
-parseSalt "FeCl2" = Just FeCl2
-parseSalt "FeSO4" = Just FeSO4
-parseSalt "CuCl2" = Just CuCl2
-parseSalt "CuSO4" = Just CuSO4
-parseSalt _ = Nothing
 
 removeSpaces :: String -> String
 removeSpaces =
     filter (not . isSpace)
 
-get_Metal_From_Salt :: Salt -> Metal
-get_Metal_From_Salt ZnCl2 = Zn
-get_Metal_From_Salt ZnSO4 = Zn
-get_Metal_From_Salt FeCl2 = Fe
-get_Metal_From_Salt FeSO4 = Fe
-get_Metal_From_Salt CuCl2 = Cu
-get_Metal_From_Salt CuSO4 = Cu
 
-splitOnce :: Char -> String -> Maybe (String, String)
-splitOnce separator input =
-    case break (== separator) input of
+splitByPlus :: String -> [String]
+splitByPlus input =
+    case break (== '+') input of
+        (left, []) ->
+            [left]
+
         (left, _ : right) ->
-            Just (left, right)
+            left : splitByPlus right
+
+
+parseInputAST :: String -> Either String ReactionAST
+parseInputAST rawInput = do
+    let parts =
+            splitByPlus
+                (removeSpaces rawInput)
+
+    if length parts < 2
+        then Left "输入中至少需要两个反应物，并用 + 分隔"
+
+        else if any null parts
+            then Left "反应物不能为空"
+
+            else do
+                speciesList <-
+                    traverse parseSpecies parts
+
+                Right
+                    (ReactionAST speciesList)
+
+
+parseSpecies :: String -> Either String Species
+parseSpecies input = do
+    let (coefficientText, formulaText) =
+            span isDigit input
+
+        coefficientValue =
+            case coefficientText of
+                "" ->
+                    1
+
+                digits ->
+                    read digits
+
+    if coefficientValue < 1
+        then Left "化学计量系数必须大于零"
+
+        else if null formulaText
+            then Left "系数后缺少化学式"
+
+            else do
+                parsedFormula <-
+                    parseFormula formulaText
+
+                Right
+                    Species
+                        { coefficientAST =
+                            coefficientValue
+
+                        , formulaAST =
+                            parsedFormula
+                        }
+
+
+parseFormula :: String -> Either String Formula
+parseFormula input = do
+    (formulaValue, remaining) <-
+        parseFormulaBody input
+
+    case remaining of
+        [] ->
+            Right formulaValue
+
+        ')' : _ ->
+            Left "出现未匹配的右括号"
+
         _ ->
-            Nothing
+            Left
+                ("无法解析剩余内容: "
+                    ++ remaining)
 
-parseInput :: String -> Either String ReactionInput
-parseInput rawInput =
-    case splitOnce '+' (removeSpaces rawInput) of
-        Nothing ->
-            Left "输入中缺少反应物分隔符 +"
 
-        Just (left, right) ->
-            parseBothOrders left right
+parseFormulaBody
+    :: String
+    -> Either String (Formula, String)
 
-parseBothOrders :: String -> String -> Either String ReactionInput
-parseBothOrders left right =
-    case (parseMetal left, parseAcid right) of
-        (Just metal, Just acid) ->
-            Right (ReactionInput_Metal_Acid metal acid)
+parseFormulaBody =
+    go []
+  where
+    go accumulated [] =
+        finish accumulated []
 
-        _ -> case (parseAcid left, parseMetal right) of
-            (Just acid, Just metal) ->
-                Right (ReactionInput_Metal_Acid metal acid)
+    go accumulated input@(character : rest)
+        | character == ')' =
+            finish accumulated input
 
-            -- 走到这里，说明不是“金属+酸”也不是“酸+金属”。开始尝试“金属+盐”
-            _ -> case (parseMetal left, parseSalt right) of
-                (Just metal, Just salt) ->
-                    Right (ReactionInput_Metal_Salt metal salt)
+        | character == '(' = do
+            (innerFormula, afterInner) <-
+                parseFormulaBody rest
 
-                -- 走到这里，尝试“盐+金属” (注意左边传入 left，右边传入 right)
-                _ -> case (parseSalt left, parseMetal right) of
-                    (Just salt, Just metal) ->
-                        Right (ReactionInput_Metal_Salt metal salt)
+            case afterInner of
+                ')' : afterClosing -> do
+                    let (subscript, remaining) =
+                            parsePositiveNumber
+                                afterClosing
 
-                    -- 所有的组合全失败了，最后保底返回 Left
-                    _ -> Left "应输入 Zn、Fe 或 Cu 与 HCl 或 H2SO4或盐"
+                    if subscript < 1
+                        then
+                            Left "括号下标必须大于零"
+
+                        else
+                            go
+                                (Group
+                                    innerFormula
+                                    subscript
+                                    : accumulated)
+                                remaining
+
+                _ ->
+                    Left "左括号没有对应的右括号"
+
+        | isUpper character = do
+            let (lowercasePart, afterSymbol) =
+                    span isLower rest
+
+                symbol =
+                    character : lowercasePart
+
+                (subscript, remaining) =
+                    parsePositiveNumber
+                        afterSymbol
+
+            element <-
+                parseElement symbol
+
+            if subscript < 1
+                then
+                    Left "元素下标必须大于零"
+
+                else
+                    go
+                        (Atom element subscript
+                            : accumulated)
+                        remaining
+
+        | otherwise =
+            Left
+                ("化学式中出现非法字符: "
+                    ++ [character])
+
+    finish [] _ =
+        Left "化学式不能为空"
+
+    finish accumulated remaining =
+        Right
+            ( Formula
+                (reverse accumulated)
+            , remaining
+            )
+
+
+parsePositiveNumber :: String -> (Int, String)
+parsePositiveNumber input =
+    case span isDigit input of
+        ("", remaining) ->
+            (1, remaining)
+
+        (digits, remaining) ->
+            (read digits, remaining)
+
+
+parseElement :: String -> Either String Element
+parseElement "H"  = Right H
+parseElement "O"  = Right O
+parseElement "S"  = Right S
+parseElement "Cl" = Right Cl
+parseElement "Zn" = Right Zn
+parseElement "Fe" = Right Fe
+parseElement "Cu" = Right Cu
+
+parseElement symbol =
+    Left
+        ("暂不支持元素: "
+            ++ symbol)

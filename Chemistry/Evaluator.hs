@@ -9,11 +9,7 @@ import Chemistry.Types
     , Salt(..)
     , ReactionInput(..)
     , ReactionResult(..)
-    )
-
-import Chemistry.Parser
-    (
-        get_Metal_From_Salt
+    ,metalOfSalt
     )
 
 activityRank :: Metal -> Int
@@ -31,7 +27,7 @@ canDisplaceHydrogen metal =
 
 canDisplaceMetal :: Metal -> Salt -> Bool
 canDisplaceMetal metal salt = 
-    activityRank metal < activityRank (get_Metal_From_Salt salt)
+    activityRank metal < activityRank (metalOfSalt salt)
 
 --改到这里了
 
@@ -66,7 +62,7 @@ evaluate (ReactionInput_Metal_Salt metal salt)
     | otherwise = 
         case makeSalt metal (Right salt) of
             Just salt_reacted ->
-                ReactionOccurs_Metal_Salt metal salt (get_Metal_From_Salt salt) salt_reacted
+                ReactionOccurs_Metal_Salt metal salt (metalOfSalt salt) salt_reacted
 
             Nothing ->
                 NoReaction_Metal_Salt metal salt

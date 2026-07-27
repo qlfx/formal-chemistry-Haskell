@@ -8,7 +8,6 @@ import Chemistry.Types
     , Salt(..)
     , ReactionResult(..)
     )
-import Chemistry.Parser (get_Metal_From_Salt)
 
 metalSymbol :: Metal -> String
 metalSymbol Zn = "Zn"
