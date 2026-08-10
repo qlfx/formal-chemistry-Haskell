@@ -1,45 +1,50 @@
 # formal-chemistry-Haskell
 
-一个用 Haskell 构造的最小化学领域编译器原型。目前聚焦金属与酸、金属与盐两类反应，目标是逐步形成清晰的编译流水线：
+一个用 Haskell 构造的最小化学领域编译器原型。目前聚焦金属与酸、金属与盐两类反应，采用分层编译流水线：
 
 ```text
 Source -> Lexer -> Token -> Parser -> AST -> Semantic Analysis -> Evaluation -> Render
 ```
 
-## 目录
+## 目录结构
 
-- `src/Chemistry/Definitions/`：领域类型、Token、AST、语义中间表示与错误类型。
-- `src/Chemistry/Workers/`：词法分析、语法分析、语义分析、求值、渲染与总编译入口。
+- `Chemistry/Definitions/`：领域类型、Token、AST、语义中间表示与错误类型。
+- `Chemistry/Workers/`：词法分析、语法分析、语义分析、求值、渲染与总编译入口。
+- `test/`：Lexer、Parser、前端流水线、Evaluator 与 Render 的手写测试程序。
+- `Main.hs`：当前实验入口。
+- `app/Main.hs`：Cabal 初始化生成的占位入口。
 
-## 当前完成的内容
+## 本次版本已完成
 
-- 化学式 AST：元素、下标、括号基团、反应物列表与计量系数。
-- 词法层：元素符号、整数、`+`、括号与 EOF Token。
-- 递归下降 Parser：`species ('+' species)+`，支持元素下标和嵌套括号基团。
-- 语义分类：识别 Zn/Fe/Cu、HCl/H2SO4，以及对应氯化物和硫酸盐。
-- 反应规则：金属活动性比较，金属-酸与金属-盐反应是否发生及产物推导。
-- 输出渲染：把反应结果重新渲染成化学式字符串。
+- 所有核心模块已统一到 `Chemistry.Definitions.*` 与 `Chemistry.Workers.*` 命名空间。
+- Lexer 能识别 Zn、Fe、Cu、H、O、S、Cl、数字、`+`、括号和 EOF，并返回词法错误位置。
+- 递归下降 Parser 支持计量系数、元素下标、括号基团及两个以上反应物。
+- Analyzer 能将公式分类为金属、酸或盐，并识别金属—酸、金属—盐反应。
+- Evaluator 根据 `Zn > Fe > H > Cu` 活动性顺序判断反应并推导产物。
+- Render 能把求值结果转换回化学反应字符串。
+- 新增独立的 Lexer、Parser、前端、Evaluator 和 Render 测试文件。
 
-## 当前状态
+## 当前状态与已知问题
 
-这批源文件记录了模块分层重构过程中的阶段性快照，尚未形成可编译版本：
+该版本比此前的重构快照更完整，但仍不是可直接构建的发布版本：
 
-- `Lexer.hs` 和 `Parser.hs` 仍使用旧模块名及旧导入路径；文件已按职责归入 `Workers`，但源码中的模块声明尚待统一。
-- `Compiler.hs` 尚未把 Lexer 接入总流水线，当前把 `String` 直接交给需要 `[Token]` 的 Parser。
-- Parser、Analyzer 使用不同的 `Either` 错误类型，总入口需要统一错误封装。
-- `Compiler.hs` 导入 `renderReactionResult`，但调用了尚未定义的 `renderResult`。
-- 目前尚缺构建配置、可执行入口和自动化测试。
+- `Chemistry/Workers/Compiler.hs` 尚未在 Parser 前调用 Lexer，并仍调用未定义的 `renderResult`。
+- Compiler 的 Parser、Analyzer 错误类型尚未统一到总错误类型。
+- 根目录 `Main.hs` 仍引用重构前的 `Chemistry.Parser`、`Chemistry.Compiler` 和不存在的 `parseInputAST`。
+- `Haskell-projects.cabal.disabled` 与 `hie.yaml.disabled` 是旧配置的禁用副本，模块清单尚未跟随新命名空间更新。
+- 测试目前是多个独立的 `Main` 程序，还没有统一测试框架或 CI。
 
-## 近期计划
+## 建议的下一步
 
-1. 统一所有模块路径为 `Chemistry.Definitions.*` 与 `Chemistry.Workers.*`。
-2. 打通 `lexer -> parser -> analyzer -> evaluator -> render`。
-3. 设计统一的编译错误类型，并为错误附加源位置。
-4. 添加 Cabal/Stack 配置、`Main` 与分层测试。
-5. 在稳定的最小系统上加入元素守恒、配平和更一般的化学规则 IR。
+1. 打通 `lexer -> parser -> analyzer -> evaluator -> render` 的 Compiler 总入口。
+2. 设计统一的 `CompilerError`，封装词法、语法和语义错误。
+3. 更新并启用 Cabal 配置，明确 `src`、`app` 和 `test` 的目录约定。
+4. 修复 `Main.hs`，加入可交互 REPL 或命令行入口。
+5. 将现有测试整合为可自动运行的测试套件，并加入 CI。
+6. 在稳定的最小系统上增加元素守恒、配平及更一般的反应规则 IR。
 
 ## 长期方向
 
 - 将项目发展为化学 DSL 与可解释规则系统。
-- 用 Z3 处理约束求解和配平。
-- 用 Lean 逐步形式化 Parser 不变量、元素守恒和规则正确性。
+- 用 Z3 处理约束求解和方程式配平。
+- 用 Lean 形式化 Parser 不变量、元素守恒和规则正确性。

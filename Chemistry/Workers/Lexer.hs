@@ -1,12 +1,12 @@
-module Chemistry.Lexer
+module Chemistry.Workers.Lexer
     ( lexer
     ) where
 
-import Chemistry.Token
-import Chemistry.Types(Element(..))
+import Chemistry.Definitions.Token
+import Chemistry.Definitions.Types(Element(..))
 import Data.Char (isSpace,isDigit)
 import Data.List (stripPrefix)
-import Chemistry.Error
+import Chemistry.Definitions.Error
 
 lexer :: String -> Either LexicalError [Token]
 lexer = scan 1
