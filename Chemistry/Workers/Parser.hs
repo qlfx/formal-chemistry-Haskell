@@ -33,17 +33,16 @@ parseGroupEnd
     -> sequence + optional
 
 -}
-module Chemistry.Parser
+module Chemistry.Workers.Parser
     ( parseReaction
     , parseFormula
     , parseSpecies
     ,parseFormulaPart
     ) where
 
-
-import Chemistry.Types
-import Chemistry.AST
-import Chemistry.Token
+import Chemistry.Definitions.Types
+import Chemistry.Definitions.AST
+import Chemistry.Definitions.Token
 
 parseReaction :: [Token]  ->Either String ReactionAST   --ReactionAST is actually a list of Species
 parseReaction tokens = do
