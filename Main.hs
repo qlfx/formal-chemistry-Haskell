@@ -4,13 +4,13 @@ module Main where
 --     ( compileReaction
 --     )
 -- import Data.ByteString.Char8 (putStrLn)
-import Chemistry.Parser (parseInputAST)
+import Chemistry.Workers.Parser (parseReaction)
 -- import System.IO
 --   ( hFlush,
 --     isEOF,
 --     stdout,
 --   )
-import Chemistry.Compiler (compileReaction)
+import Chemistry.Workers.Compiler (compileReaction)
 
 -- processLine :: String -> IO ()
 -- processLine source =
@@ -53,7 +53,7 @@ main = do
   putStrLn "Type exit to quit."
   putStrLn ""
 
-  print (parseInputAST "Zn + 2CuH2SO4")
+  print (parseReaction "Zn + 2CuH2SO4")
   print (compileReaction "Zn + HCl")
 
 -- repl

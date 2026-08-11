@@ -1,11 +1,8 @@
-module Chemistry.AST
+module Chemistry.Definitions.AST
     (
-        Element(..),Formula(..),FormulaPart(..),Species(..),ReactionAST(..)
+        Formula(..),FormulaPart(..),Species(..),ReactionAST(..)
     )where
-
-data Element = 
-    H | O | S | Cl | Zn | Fe | Cu
-    deriving(Eq,Show) 
+import Chemistry.Definitions.Types
 
 data Formula = 
     Formula [FormulaPart]
