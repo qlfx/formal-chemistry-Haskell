@@ -1,0 +1,46 @@
+cradle:
+  multi:
+    - path: "./TestLexer.hs"
+      config:
+        cradle:
+          direct:
+            arguments:
+              - "-i."
+              - "-package"
+              - "base"
+              - "TestLexer.hs"
+
+    - path: "./Chemistry/Lexer.hs"
+      config:
+        cradle:
+          direct:
+            arguments:
+              - "-i."
+              - "-package"
+              - "base"
+              - "TestLexer.hs"
+
+    - path: "./Chemistry/Token.hs"
+      config:
+        cradle:
+          direct:
+            arguments:
+              - "-i."
+              - "-package"
+              - "base"
+              - "TestLexer.hs"
+
+    - path: "./app"
+      config:
+        cradle:
+          none:
+
+    - path: "./"
+      config:
+        cradle:
+          direct:
+            arguments:
+              - "-i."
+              - "-package"
+              - "base"
+              - "Main.hs"
