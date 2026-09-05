@@ -10,9 +10,11 @@ module Chemistry.Definitions.Types
     ,ElementalSubstance(..)
     ) where
 
+import Data.Map.Strict ( Map )
+import qualified Data.Map.Strict as Map
 data Element = 
     H | O | S | Cl | Zn | Fe | Cu
-    deriving(Eq,Show) 
+    deriving(Eq,Ord,Show) 
 
 data Metal
     = MetalZn
